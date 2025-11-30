@@ -14,6 +14,7 @@ typedef enum {
     NK_CONSOLE_EVENT_CHANGED, /** Triggered when the value for the widget is changed. */
     NK_CONSOLE_EVENT_CLICKED, /** Triggered when the widget is clicked. */
     NK_CONSOLE_EVENT_POST_RENDER_ONCE, /** Triggered after all the widgets have rendered, and the event is removed. */
+    NK_CONSOLE_EVENT_PRE_PARENT_RENDER, /** Triggered before the parent widget is rendered. */
 } nk_console_event_type;
 
 /**
@@ -689,6 +690,8 @@ NK_API void nk_console_render(nk_console* console) {
 
         // Reset the input state.
         data->input_processed = nk_false;
+
+        nk_console_trigger_event(data->active_parent, NK_CONSOLE_EVENT_PRE_PARENT_RENDER);
 
         // Render the active message.
         nk_console_render_message(console);
