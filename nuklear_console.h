@@ -103,6 +103,7 @@ typedef struct nk_console {
 typedef struct nk_console_top_data {
     nk_console* active_parent; /** The parent that is currently being displayed. */
     nk_bool input_processed; /** Whether or not user input has been processed. */
+    nk_bool scroll_requested; /** True if we've switched active widget and need to check scrolling */
 
     /**
      * Message queue that is to be shown.
@@ -504,14 +505,19 @@ NK_API void nk_console_check_up_down(nk_console* widget, struct nk_rect bounds) 
     nk_console_top_data* data = (nk_console_top_data*)top->data;
 
     // Scroll to the active widget if needed.
-    struct nk_rect content_region = nk_window_get_content_region(widget->ctx);
-    nk_uint offsetx, offsety;
-    nk_window_get_scroll(widget->ctx, &offsetx, &offsety);
-    if (bounds.y + bounds.h > content_region.y + content_region.h + (float)offsety) {
-        nk_window_set_scroll(widget->ctx, offsetx, (nk_uint)(bounds.y + bounds.h - content_region.y - content_region.h));
-    }
-    else if (bounds.y < content_region.y + (float)offsety) {
-        nk_window_set_scroll(widget->ctx, offsetx, (nk_uint)(bounds.y - content_region.y));
+    if (data->scroll_requested) {
+        struct nk_rect content_region = nk_window_get_content_region(widget->ctx);
+
+        nk_uint offsetx, offsety;
+        nk_window_get_scroll(widget->ctx, &offsetx, &offsety);
+        if (bounds.y + bounds.h > content_region.y + content_region.h + (float)offsety) {
+            nk_window_set_scroll(widget->ctx, offsetx, (nk_uint)(bounds.y + bounds.h - content_region.y - content_region.h));
+        }
+        else if (bounds.y < content_region.y + (float)offsety) {
+            nk_window_set_scroll(widget->ctx, offsetx, (nk_uint)(bounds.y - content_region.y));
+        }
+
+        data->scroll_requested = nk_false;
     }
 
     // Only process an active input once.
@@ -524,6 +530,7 @@ NK_API void nk_console_check_up_down(nk_console* widget, struct nk_rect bounds) 
                 nk_console* target = widget->parent->children[widgetIndex];
                 if (target != NULL && nk_console_selectable(target)) {
                     nk_console_set_active_widget(target);
+                    data->scroll_requested = nk_true;
                     if (++count > 4) {
                         break;
                     }
@@ -539,6 +546,7 @@ NK_API void nk_console_check_up_down(nk_console* widget, struct nk_rect bounds) 
                 nk_console* target = widget->parent->children[widgetIndex];
                 if (nk_console_selectable(target)) {
                     nk_console_set_active_widget(target);
+                    data->scroll_requested = nk_true;
                     if (++count > 4) {
                         break;
                     }
@@ -553,6 +561,7 @@ NK_API void nk_console_check_up_down(nk_console* widget, struct nk_rect bounds) 
                 nk_console* target = widget->parent->children[widgetIndex];
                 if (nk_console_selectable(target)) {
                     nk_console_set_active_widget(target);
+                    data->scroll_requested = nk_true;
                     break;
                 }
             }
@@ -565,6 +574,7 @@ NK_API void nk_console_check_up_down(nk_console* widget, struct nk_rect bounds) 
                 nk_console* target = widget->parent->children[widgetIndex];
                 if (nk_console_selectable(target)) {
                     nk_console_set_active_widget(target);
+                    data->scroll_requested = nk_true;
                     break;
                 }
             }
@@ -583,6 +593,7 @@ NK_API void nk_console_check_up_down(nk_console* widget, struct nk_rect bounds) 
                 else if (widget->parent->parent != NULL) {
                     nk_console_set_active_parent(widget->parent->parent);
                 }
+                data->scroll_requested = nk_true;
             }
 
             data->input_processed = nk_true;
